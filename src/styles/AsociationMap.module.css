@@ -1,0 +1,67 @@
+
+@media screen and (min-width: 0px) {
+    .wrapper{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        /* visibility: hidden; */
+        
+    }
+    .hidden{
+        /* visibility: hidden; */
+        display: none;
+        cursor: pointer!important;
+    }
+    
+    .mapContainer{
+       height: 80vh;
+       width: 100%;
+       flex-grow:1;
+       transition: flex-grow 1000ms linear;
+    }
+    
+    .circularProgress{
+        z-index: 999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 400px;
+    }
+    
+    .aside{
+        width: 90vw;
+        margin-top: 24px;
+        margin-bottom: 24px;
+    }
+
+    .regla{
+        width: 100%;
+        padding-bottom: 20px;
+    }
+
+    .containerScroll{
+        max-height: 70vh;
+        overflow-y: scroll;
+    }
+}
+
+@media screen and (min-width: 760px) {
+
+    .wrapper{
+        display: flex;
+        flex-direction: row;
+        /* visibility: hidden; */
+        
+    }
+
+    .aside{
+        /* margin-left: 24px; */
+        width: 40vw;
+    }
+}
+
+@media screen and (min-width: 960px) {}
+
+@media screen and (min-width: 1320px) {
+ 
+}
