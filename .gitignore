@@ -107,3 +107,8 @@ dist
 
 # TernJS port file
 .tern-port
+
+csv-server/input/*.csv
+csv-server/input/*.json
+csv-server/output/*.csv
+csv-server/output/*.json
