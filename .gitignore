@@ -44,6 +44,7 @@ Delitos_Violentos_Prep_Rango.csv
 Delitos_Genero_Prep_Rango.csv
 Delitos_Genero_Procesado.json
 Delitos_Violentos_Procesado.json
+ca.pem
 # TypeScript v1 declaration files
 typings/
 

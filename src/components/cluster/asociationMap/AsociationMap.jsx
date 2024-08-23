@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
 import styles from "./../../../styles/AsociationMap.module.css";
 import { Box, CircularProgress, Container, Typography } from '@mui/material';
 
@@ -7,6 +7,7 @@ import { MAPBOX_KEY } from "./../../../config/constants";
 import { iconMarker } from '../MarkerIcon';
 
 import axios from "axios";
+import cdmxBoundaryData from './../../../assets/cdmx.json';
 
 import Regla1 from "./../../../assets/Regla_1.PNG";
 import Regla2 from "./../../../assets/Regla_2.PNG";
@@ -28,7 +29,7 @@ import 'leaflet.markercluster';
 require("leaflet.markercluster/dist/MarkerCluster.css");
 require("leaflet.markercluster/dist/MarkerCluster.Default.css");
 
-const mapboxUriTileLayer = "https://api.mapbox.com/styles/v1/medinavilla/cl6v5mk8w000t14mtzhgb5kbd/tiles/256/{z}/{x}/{y}@2x?access_token=" + MAPBOX_KEY
+const mapboxUriTileLayer = "https://api.mapbox.com/styles/v1/medinavilla/cl6v5mk8w000t14mtzhgb5kbd/tiles/256/{z}/{x}/{y}@2x?access_token=" + MAPBOX_KEY;
 
 const AsociationMap = ({ markerType }) => {
     const mapRef = useRef(null);
@@ -37,7 +38,6 @@ const AsociationMap = ({ markerType }) => {
     const [markers, setMarkers] = useState([]);
     const [markerSelected, setMarkerSelected] = useState();
 
-
     const [transitionOn, setTransitionOn] = useState(false);
 
     const [showAside] = useState(true);
@@ -45,7 +45,6 @@ const AsociationMap = ({ markerType }) => {
     const [loading, setLoading] = useState(true);
     const [loadingData, setLoadingData] = useState(true);
 
-    /* Obrenemos los delitos de genero de nuestra API*/
     useEffect(() => {
         async function fetchData() {
             axios.get("http://localhost:8081/" + markerType).then((response) => {
@@ -53,17 +52,14 @@ const AsociationMap = ({ markerType }) => {
                     setMarkers(response.data)
                     setLoadingData(false);
                 }
-
             }).catch((error) => {
                 alert(error.message);
                 setLoadingData(false);
             })
         }
         fetchData();
-    }, [markerType])
+    }, [markerType]);
 
-
-    /* Listeners que siempre estara pendiente del cualquier cambio del tamaño del mapa para hacer un RESIZE*/
     useEffect(() => {
         if (transitionOn) {
             const interval = setInterval(() => {
@@ -74,7 +70,7 @@ const AsociationMap = ({ markerType }) => {
                 }
             }, 10);
         }
-    }, [transitionOn])
+    }, [transitionOn]);
 
     useEffect(() => {
         if (!loading) {
@@ -82,10 +78,8 @@ const AsociationMap = ({ markerType }) => {
                 mapRef.current.invalidateSize();
             }, 200);
         }
-    }, [loading])
+    }, [loading]);
 
-    console.log(markerType)
-    /* Convertimos los marcadores en un formato legible para el mapa*/
     const points = markers.map((data, id) => {
         if (!isNaN(data.longitud) && !isNaN(data.latitud)) {
             return ({
@@ -103,79 +97,89 @@ const AsociationMap = ({ markerType }) => {
     });
 
     const renderCluster = (map) => {
-        setTimeout(
-            () => {
-                const markers = L.markerClusterGroup({
-                    maxClusterRadius: 100,
-                    disableClusteringAtZoom: 18,
-                    spiderfyOnMaxZoom: false,
-                    showCoverageOnHover: false,
-                    chunkedLoading: true
-                })
+        setTimeout(() => {
+            const markers = L.markerClusterGroup({
+                maxClusterRadius: 100,
+                disableClusteringAtZoom: 18,
+                spiderfyOnMaxZoom: false,
+                showCoverageOnHover: false,
+                chunkedLoading: true
+            });
 
-                points.map((point) => {
+            points.forEach((point) => {
+                if (point.geometry) {
                     let marker = L.marker([point.geometry.coordinates[1], point.geometry.coordinates[0]], { icon: iconMarker })
                     marker.data = point.properties.data
                     marker.addTo(markers);
-                    return true;
-                })
+                }
+            });
 
+            markers.on('click', function (marker) {
+                showContentMarkerAside(marker);
+            });
 
-                markers.on('click', function (marker) {
-                    showContentMarkerAside(marker);
-                });
+            markers.addTo(map.target);
 
-                markers.addTo(map.target);
-
-                mapRef.current._layersMaxZoom = 18;
-                setLoading(false);
-            }, 500
-        );
+            mapRef.current._layersMaxZoom = 18;
+            setLoading(false);
+        }, 500);
     }
 
     const showContentMarkerAside = async (marker) => {
         marker.sourceTarget.latlng = marker.latlng;
-        if (showAside) { // Si ya estan mostrados los delitos, no hacer ninguna transicion
+        if (showAside) {
             setMarkerSelected(marker.sourceTarget.data);
             mapRef.current.flyTo(marker.latlng, 18)
         } else {
-            // setShowAside(true);
             mapRef.current.flyTo(marker.latlng, 18)
             setMarkerSelected(marker.sourceTarget.data);
             setTransitionOn(true);
         }
     }
 
+    const boundaryStyle = {
+        fillColor: "#FFA500",
+        fillOpacity: 0.1,
+        color: "#FF8C00",
+        weight: 2,
+    };
+
     return (
         <div>
             <div className={loading ? [styles.hidden] : styles.wrapper}>
                 <div className={styles.mapContainer}>
-                    {!loadingData ? <MapContainer
-                        preferCanvas={true}
-                        center={[19.432608, -99.133209]}
-                        zoom={zoom}
-                        ref={mapRef}
-                        style={{ height: '100%', width: "100%" }}
-                        whenReady={(map) => { renderCluster(map) }}
-                    >
-                        <TileLayer
-                            url={mapboxUriTileLayer}
+                    {!loadingData ? (
+                        <MapContainer
+                            preferCanvas={true}
+                            center={[19.432608, -99.133209]}
+                            zoom={zoom}
+                            ref={mapRef}
+                            style={{ height: '100%', width: "100%" }}
+                            whenReady={(map) => { renderCluster(map) }}
+                        >
+                            <TileLayer
+                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                         />
-                    </MapContainer> : ""}
+                            <GeoJSON 
+                                data={cdmxBoundaryData} 
+                                style={boundaryStyle}
+                            />
+                        </MapContainer>
+                    ) : ""}
                 </div>
 
-                {
-                    <div style={{ marginLeft: "24px" }}>
-                        <div className={styles.aside}>
-                            <Container >
-                                <Box style={{ backgroundColor: "#0E8DD4", color: "white", padding: "18px", borderTopLeftRadius: "8px", borderTopRightRadius: "8px" }} >
-                                    <Typography sx={{ fontSize: 18 }} color="white" >
-                                        Reglas de Asociación  <br /> <strong>{markerSelected ? '"' + markerSelected.delito + '"' : ""}</strong>
-                                    </Typography>
-                                </Box>
-                                <Box style={{ border: "1px solid #E7E7E7" }}>
-                                    {markerType === "delitos_genero" ? <div className={styles.containerScroll}>
+                <div style={{ marginLeft: "24px" }}>
+                    <div className={styles.aside}>
+                        <Container>
+                            <Box style={{ backgroundColor: "#0E8DD4", color: "white", padding: "18px", borderTopLeftRadius: "8px", borderTopRightRadius: "8px" }}>
+                                <Typography sx={{ fontSize: 18 }} color="white">
+                                    Reglas de Asociación  <br /> <strong>{markerSelected ? '"' + markerSelected.delito + '"' : ""}</strong>
+                                </Typography>
+                            </Box>
+                            <Box style={{ border: "1px solid #E7E7E7" }}>
+                                {markerType === "delitos_genero" ? (
+                                    <div className={styles.containerScroll}>
                                         <img src={Regla1} className={styles.regla} alt="regla1" />
                                         <img src={Regla2} className={styles.regla} alt="regla2" />
                                         <img src={Regla3} className={styles.regla} alt="regla3" />
@@ -189,21 +193,22 @@ const AsociationMap = ({ markerType }) => {
                                         <img src={Regla11} className={styles.regla} alt="regla11" />
                                         <img src={Regla12} className={styles.regla} alt="regla12" />
                                         <img src={Regla13} className={styles.regla} alt="regla13" />
-                                    </div> : <div>
+                                    </div>
+                                ) : (
+                                    <div>
                                         <img src={Regla14} className={styles.regla} alt="regla14" />
                                     </div>
-                                    }
-                                </Box>
-                            </Container>
-                        </div>
+                                )}
+                            </Box>
+                        </Container>
                     </div>
-                }
-            </div >
-            {
-                (loading) && <div className={styles.circularProgress}>
+                </div>
+            </div>
+            {loading && (
+                <div className={styles.circularProgress}>
                     <CircularProgress color="error" />
                 </div>
-            }
+            )}
         </div>
     );
 }
