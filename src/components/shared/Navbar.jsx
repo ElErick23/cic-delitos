@@ -26,7 +26,7 @@ const Navbar = () => {
 
     return (
         <AppBar position="sticky" elevation={0} sx={{ 
-            background: 'linear-gradient(45deg, #800040 30%, #FF8E53 90%)',
+            background: 'linear-gradient(45deg, #800040 30%, #e8824d 90%)',
             transition: 'all 0.3s',
         }}>
             <Container maxWidth="xl">
@@ -89,7 +89,7 @@ const Navbar = () => {
                                 </Tabs>
                             </Box>
                             <Box sx={{ flexGrow: 0, display: 'flex', alignItems: 'center' }}>
-                                <img src={CICLOGO} alt='logo' style={{ height: '40px', marginLeft: '20px' }} />
+                                <img src={CICLOGO} alt='logo' style={{ height: '45px', marginLeft: '20px' }} />
                             </Box>
                         </>
                     )}
