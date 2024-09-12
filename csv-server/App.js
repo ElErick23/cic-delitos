@@ -1,33 +1,42 @@
 const express = require('express');
-const app = express();
 const cors = require('cors');
-const port = 8081;
 const bodyParser = require('body-parser');
 const { Connection } = require('./postgres');
 
+const app = express();
+const port = process.env.PORT || 8081;
+
+// Open database connection
 Connection.open();
 
-app.use(cors())
-app.use(bodyParser.json());
+// Middleware
+app.use(cors());
+app.use(bodyParser.json({ limit: '100mb' }));
 app.use(bodyParser.urlencoded({ limit: '100mb', extended: true }));
+app.use(express.static(__dirname));
+app.use(express.json());
 
-let allowOrigin = '{URL_PRODUCTION}'
-if (process.env.NODE_ENV === "dev")
-  allowOrigin = "*"
+// CORS configuration
+const allowOrigin = process.env.NODE_ENV === "production" 
+  ? process.env.URL_PRODUCTION 
+  : "*";
 
-  console.log(allowOrigin);
-app.use(function (req, res, next) {
-  res.setHeader('Access-Control-Allow-Origin',allowOrigin);
-  res.setHeader('Access-Control-Allow-Methods', 'GET');
-  res.setHeader('Access-Control-Allow-Headers', '*');
-  // res.setHeader('Access-Control-Allow-Credentials', true);
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', allowOrigin);
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  // Uncomment the next line if you need credentials
+  // res.header('Access-Control-Allow-Credentials', 'true');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
   next();
 });
 
-app.use(express.static(__dirname));
-app.use(express.json());
+// Routes
 require('./routes')(app);
 
-app.listen(process.env.PORT || port, () => {
-  console.log(`Example app listening on port ${port}`)
-})
+// Start server
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
